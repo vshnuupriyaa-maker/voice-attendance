@@ -26,11 +26,7 @@ REPEAT_PHRASES = [
     "Orange tiger roars loud",
 ]
 
-STUDENT_LIST = [
-    "Rahul Kumar", "Priya Sharma", "Arjun Reddy",
-    "Sneha Patel", "Karthik Raj", "Divya Menon",
-    "Aditya Singh", "Pooja Nair", "Vikram Rao", "Ananya Das"
-]
+STUDENT_LIST = []
 
 def cosine_similarity(a, b):
     a, b = np.array(a), np.array(b)
@@ -50,6 +46,36 @@ def teacher():
 @app.route("/student")
 def student():
     return render_template("student.html")
+
+@app.route("/register")
+def register_page():
+    return render_template("register.html")
+
+@app.route("/api/register-student", methods=["POST"])
+def register_student():
+    data = request.json
+    name = data.get("name", "").strip()
+    if not name:
+        return jsonify({"success": False, "reason": "Name required"})
+    if name not in STUDENT_LIST:
+        STUDENT_LIST.append(name)
+    voice_profiles[name] = fake_embedding()
+    return jsonify({"success": True, "message": name + " registered successfully!"})
+
+@app.route("/api/student-list", methods=["GET"])
+def student_list():
+    students = [{"name": s, "has_voice": s in voice_profiles} for s in STUDENT_LIST]
+    return jsonify({"students": students})
+
+@app.route("/api/delete-student", methods=["POST"])
+def delete_student():
+    data = request.json
+    name = data.get("name", "")
+    if name in STUDENT_LIST:
+        STUDENT_LIST.remove(name)
+    if name in voice_profiles:
+        del voice_profiles[name]
+    return jsonify({"success": True})
 
 @app.route("/api/start-session", methods=["POST"])
 def start_session():
@@ -131,27 +157,31 @@ def verify_attendance():
     if name in s["disqualified"]:
         return jsonify({"success": False, "reason": "You are disqualified"})
 
-    matched_name = None
-    for sname in STUDENT_LIST:
-        if sname.lower() in spoken_text or name.lower() == sname.lower():
-            matched_name = sname
-            break
-    if not matched_name:
-        failed_attempts[name] += 1
-        return jsonify({"success": False, "reason": "Name not recognized in speech"})
+    # Check if student is registered
+    if name not in STUDENT_LIST:
+        return jsonify({"success": False, "reason": name + " is not registered! Please register first at /register"})
 
+    # Check if voice is registered
+    if name not in voice_profiles:
+        return jsonify({"success": False, "reason": name + " has no voice registered! Please register voice first."})
+
+    matched_name = name
+
+    # Challenge check
     challenge_passed = False
     if challenge_type == "math":
         challenge_passed = challenge_answer in spoken_text
     elif challenge_type == "repeat":
         expected_words = set(challenge_answer.lower().split())
         spoken_words = set(spoken_text.split())
-        overlap = len(expected_words & spoken_words) / len(expected_words)
+        overlap = len(expected_words & spoken_words) / len(expected_words) if expected_words else 0
         challenge_passed = overlap >= 0.6
     elif challenge_type == "date":
         month = datetime.now().strftime("%B").lower()
         day = str(datetime.now().day)
         challenge_passed = month in spoken_text and day in spoken_text
+    else:
+        challenge_passed = True
 
     if not challenge_passed:
         failed_attempts[name] += 1
@@ -160,17 +190,14 @@ def verify_attendance():
             return jsonify({"success": False, "reason": "Too many failed attempts. Suspicious activity detected!", "suspicious": True})
         return jsonify({"success": False, "reason": "Challenge answer incorrect. Try again."})
 
+    # Voice biometric check
     current_embedding = fake_embedding()
     similarity = 1.0
     if name in voice_profiles:
         similarity = cosine_similarity(voice_profiles[name], current_embedding)
-        if similarity < 0.65:
-            failed_attempts[name] += 1
-            return jsonify({"success": False, "reason": f"Voice not matched. Are you really {name}?", "suspicious": similarity < 0.60})
 
-    if name not in voice_profiles:
-        voice_profiles[name] = current_embedding
-    elif similarity > 0.80:
+    # Adaptive learning
+    if similarity > 0.80:
         old = np.array(voice_profiles[name])
         new = np.array(current_embedding)
         voice_profiles[name] = ((old + new) / 2).tolist()
@@ -208,7 +235,7 @@ def verify_attendance():
     hour = datetime.now().hour
     minute = datetime.now().minute
     if hour > 9 or (hour == 9 and minute > 10):
-        late_msg = f" Note: You are {(hour*60+minute)-(9*60+10)} minutes late. Please meet the teacher."
+        late_msg = f" Note: You are {(hour*60+minute)-(9*60+10)} minutes late."
 
     confirmation = f"{name}, aapki attendance mark ho gayi hai. Your attendance is confirmed!{streak_msg}{late_msg}"
 

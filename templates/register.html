@@ -10,137 +10,157 @@
 <div class="container">
   <header>
     <a href="/" class="back-btn">Home</a>
-    <h1>Register Students</h1>
+    <h1>Register Student Voice</h1>
   </header>
 
   <div class="panel">
-    <h2>Add New Student</h2>
-    <div class="name-row" style="margin-bottom:1rem">
-      <input type="text" id="new-name" placeholder="Enter student full name"/>
+    <h2>Step 1 — Enter Your Name</h2>
+    <input type="text" id="reg-name" placeholder="Type your full name here"/>
+  </div>
+
+  <div class="panel">
+    <h2>Step 2 — Record Your Voice</h2>
+    <div class="instruction-box">
+      <p>Click record and say clearly:</p>
+      <div class="say-this">"My name is [Your Name] and I am registering my voice"</div>
     </div>
-    <div class="record-section">
-      <button class="btn btn-mic btn-large" id="record-btn" onclick="startRecording()">Start Voice Recording</button>
-      <div class="record-status hidden" id="record-status">
-        <div class="pulse-ring"></div>
-        <span>Recording... speak now</span>
-      </div>
-      <div class="transcript-box" id="transcript-box">Your spoken words will appear here...</div>
+    <button class="btn btn-mic btn-large" id="reg-record-btn" onclick="startRegRecording()">Start Recording</button>
+    <div class="record-status hidden" id="reg-record-status">
+      <div class="pulse-ring"></div>
+      <span>Recording... speak now</span>
     </div>
-    <button class="btn btn-primary btn-large hidden" id="save-btn" onclick="saveStudent()">Save Student</button>
-    <div class="response-box" id="save-response"></div>
+    <div class="transcript-box" id="reg-transcript">Your words will appear here...</div>
+  </div>
+
+  <div class="panel hidden" id="save-panel">
+    <h2>Step 3 — Save Registration</h2>
+    <button class="btn btn-primary btn-large" onclick="saveRegistration()">Save My Voice</button>
+    <div class="response-box" id="reg-response"></div>
   </div>
 
   <div class="panel">
     <h2>Registered Students</h2>
-    <button class="btn btn-secondary" onclick="loadStudents()">Refresh List</button>
-    <div id="students-list" style="margin-top:1rem"></div>
+    <button class="btn btn-secondary" onclick="loadStudents()">Refresh</button>
+    <div id="reg-students-list" style="margin-top:1rem"></div>
   </div>
 </div>
-<script src="/static/js/murf.js"></script>
 <script>
-let mediaRecorder = null;
-let audioChunks = [];
-let audioBlob = null;
-let spokenText = "";
+let regAudioBlob = null;
+let regMediaRecorder = null;
+let regAudioChunks = [];
+let regSpokenText = "";
 
-async function startRecording() {
-  const name = document.getElementById("new-name").value.trim();
-  if (!name) { alert("Please enter student name first!"); return; }
+async function startRegRecording() {
+  const name = document.getElementById("reg-name").value.trim();
+  if (!name) { alert("Please enter your name first!"); return; }
 
-  if (!navigator.mediaDevices) { alert("Microphone not supported!"); return; }
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
-  const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-  recognition.lang = "en-IN";
-  recognition.onresult = (e) => {
-    spokenText = e.results[0][0].transcript;
-    document.getElementById("transcript-box").textContent = spokenText;
-  };
-  recognition.start();
+    // Speech recognition
+    if (window.SpeechRecognition || window.webkitSpeechRecognition) {
+      const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+      recognition.lang = "en-IN";
+      recognition.onresult = (e) => {
+        regSpokenText = e.results[0][0].transcript;
+        document.getElementById("reg-transcript").textContent = regSpokenText;
+      };
+      recognition.start();
+    }
 
-  const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-  mediaRecorder = new MediaRecorder(stream);
-  audioChunks = [];
-  mediaRecorder.ondataavailable = (e) => audioChunks.push(e.data);
-  mediaRecorder.onstop = () => {
-    audioBlob = new Blob(audioChunks, { type: "audio/webm" });
-    document.getElementById("save-btn").classList.remove("hidden");
-    document.getElementById("record-status").classList.add("hidden");
-    document.getElementById("record-btn").textContent = "Record Again";
-  };
-  mediaRecorder.start();
-  document.getElementById("record-btn").textContent = "Stop Recording";
-  document.getElementById("record-btn").onclick = stopRecording;
-  document.getElementById("record-status").classList.remove("hidden");
-  setTimeout(stopRecording, 5000);
-}
+    // Audio recording
+    regMediaRecorder = new MediaRecorder(stream);
+    regAudioChunks = [];
+    regMediaRecorder.ondataavailable = (e) => regAudioChunks.push(e.data);
+    regMediaRecorder.onstop = () => {
+      regAudioBlob = new Blob(regAudioChunks, { type: "audio/webm" });
+      document.getElementById("save-panel").classList.remove("hidden");
+      document.getElementById("reg-record-status").classList.add("hidden");
+      document.getElementById("reg-record-btn").textContent = "Record Again";
+      document.getElementById("reg-record-btn").onclick = startRegRecording;
+    };
+    regMediaRecorder.start();
+    document.getElementById("reg-record-btn").textContent = "Stop Recording";
+    document.getElementById("reg-record-btn").onclick = stopRegRecording;
+    document.getElementById("reg-record-status").classList.remove("hidden");
+    setTimeout(stopRegRecording, 5000);
 
-function stopRecording() {
-  if (mediaRecorder && mediaRecorder.state !== "inactive") {
-    mediaRecorder.stop();
-    document.getElementById("record-btn").textContent = "Record Again";
-    document.getElementById("record-btn").onclick = startRecording;
+  } catch(e) {
+    alert("Microphone access denied! Please allow microphone.");
   }
 }
 
-async function saveStudent() {
-  const name = document.getElementById("new-name").value.trim();
-  if (!name) { alert("Please enter a name!"); return; }
+function stopRegRecording() {
+  if (regMediaRecorder && regMediaRecorder.state !== "inactive") {
+    regMediaRecorder.stop();
+  }
+}
+
+async function saveRegistration() {
+  const name = document.getElementById("reg-name").value.trim();
+  if (!name) { alert("Please enter your name!"); return; }
 
   let audioB64 = "";
-  if (audioBlob) {
-    const buf = await audioBlob.arrayBuffer();
+  if (regAudioBlob) {
+    const buf = await regAudioBlob.arrayBuffer();
     audioB64 = btoa(String.fromCharCode(...new Uint8Array(buf)));
   }
 
   const res = await fetch("/api/register-student", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ name: name, audio: audioB64, spoken_text: spokenText })
+    body: JSON.stringify({
+      name: name,
+      audio: audioB64,
+      spoken_text: regSpokenText
+    })
   });
+
   const data = await res.json();
+  const responseBox = document.getElementById("reg-response");
 
   if (data.success) {
-    document.getElementById("save-response").textContent = name + " registered successfully!";
-    document.getElementById("save-response").style.color = "#4ade80";
-    document.getElementById("new-name").value = "";
-    document.getElementById("transcript-box").textContent = "Your spoken words will appear here...";
-    document.getElementById("save-btn").classList.add("hidden");
-    await speak(name + " has been registered successfully!");
+    responseBox.textContent = "✅ " + data.message;
+    responseBox.style.color = "#4ade80";
+    document.getElementById("reg-name").value = "";
+    document.getElementById("reg-transcript").textContent = "Your words will appear here...";
+    document.getElementById("save-panel").classList.add("hidden");
+    regAudioBlob = null;
+    regSpokenText = "";
     loadStudents();
   } else {
-    document.getElementById("save-response").textContent = "Error: " + data.reason;
-    document.getElementById("save-response").style.color = "#ef4444";
+    responseBox.textContent = "❌ " + data.reason;
+    responseBox.style.color = "#ef4444";
   }
 }
 
 async function loadStudents() {
   const res = await fetch("/api/student-list");
   const data = await res.json();
-  const list = document.getElementById("students-list");
+  const list = document.getElementById("reg-students-list");
   if (data.students.length === 0) {
-    list.innerHTML = "<p style='color:var(--text-muted)'>No students registered yet</p>";
+    list.innerHTML = "<p style='color:#94a3b8'>No students registered yet</p>";
     return;
   }
   list.innerHTML = data.students.map((s, i) =>
     "<div class='leader-row'>" +
     "<span class='medal'>" + (i+1) + "</span>" +
     "<span class='leader-name'>" + s.name + "</span>" +
-    "<span class='leader-days' style='color:" + (s.has_voice ? "#4ade80" : "#f59e0b") + "'>" +
-    (s.has_voice ? "Voice Registered" : "No Voice") + "</span>" +
-    "<button class='btn btn-small' style='background:#ef4444;color:white;margin-left:8px' onclick='deleteStudent("" + s.name + "")'>Remove</button>" +
+    "<span style='font-size:0.82rem;color:" + (s.has_voice ? "#4ade80" : "#f59e0b") + "'>" +
+    (s.has_voice ? "✅ Voice Registered" : "⚠️ No Voice") + "</span>" +
+    "<button style='margin-left:8px;padding:4px 10px;background:#ef4444;color:white;border:none;border-radius:8px;cursor:pointer' onclick='deleteStudent("" + s.name + "")'>Remove</button>" +
     "</div>"
   ).join("");
 }
 
 async function deleteStudent(name) {
   if (!confirm("Remove " + name + "?")) return;
-  const res = await fetch("/api/delete-student", {
+  await fetch("/api/delete-student", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ name })
   });
-  const data = await res.json();
-  if (data.success) { await speak(name + " removed."); loadStudents(); }
+  loadStudents();
 }
 
 loadStudents();
