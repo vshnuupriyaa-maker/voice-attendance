@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+html = """<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -161,7 +161,7 @@ function showStudents() {
         "<span class='leader-name'>" + s.name + "</span>" +
         "<span style='font-size:0.82rem;color:" + (s.has_voice ? "#4ade80" : "#f59e0b") + "'>" +
         (s.has_voice ? "Voice Registered" : "No Voice") + "</span>" +
-        "<button style='margin-left:8px;padding:4px 10px;background:#ef4444;color:white;border:none;border-radius:8px;cursor:pointer' onclick='removeStudent("" + s.name + "")'>Remove</button>" +
+        "<button style='margin-left:8px;padding:4px 10px;background:#ef4444;color:white;border:none;border-radius:8px;cursor:pointer' onclick='removeStudent(\"" + s.name + "\")'>Remove</button>" +
         "</div>";
     }).join("");
   }).catch(function() {});
@@ -179,4 +179,8 @@ function removeStudent(name) {
 showStudents();
 </script>
 </body>
-</html>
+</html>"""
+
+with open('templates/register.html', 'w', encoding='utf-8') as f:
+    f.write(html)
+print("Done! Length:", len(html))
