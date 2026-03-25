@@ -7,6 +7,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 .hero-icon{font-size:64px;margin-bottom:1rem}
 .hero h1{font-size:2.2rem;font-weight:700;background:linear-gradient(135deg,#6366f1,#a78bfa,#38bdf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:0.5rem}
 .subtitle{color:var(--text-muted);margin-bottom:2.5rem;font-size:1.1rem}
+.app-name-sub{color:var(--text-muted);font-size:0.95rem;margin:-0.25rem 0 0.25rem;opacity:0.8}
 .hero-cards{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:2rem}
 .card{display:block;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:2rem 1.5rem;text-decoration:none;color:var(--text);transition:transform 0.2s,border-color 0.2s,box-shadow 0.2s;cursor:pointer}
 .card:hover{transform:translateY(-4px);box-shadow:0 12px 40px rgba(99,102,241,0.2)}
