@@ -10,7 +10,7 @@
 <div class="hero">
   <div class="hero-icon">🎙️</div>
   <h1>VoxAttend</h1>
-  <p class="app-name-sub">Voice Smart Attendance</p>
+  <p class="app-name-sub">AI Powered Smart Voice Attendance System</p>
   <p class="subtitle">Proxy-proof · Voice-first · Zero app install</p>
   <div class="hero-cards">
     <a href="/teacher" class="card card-teacher">
@@ -32,5 +32,13 @@
     <span>😊 Mood Tracker</span>
   </div>
 </div>
+<script>
+  window.addEventListener('load', () => {
+    const msg = new SpeechSynthesisUtterance('Welcome to VoxAttend.');
+    msg.rate = 0.95;
+    msg.pitch = 1;
+    window.speechSynthesis.speak(msg);
+  });
+</script>
 </body>
 </html>
